@@ -1,0 +1,38 @@
+ARG BASE_IMAGE=openanolis/anolisos:23.4
+FROM $BASE_IMAGE
+
+ARG DOCKER_CLI_VERSION=dev
+
+ARG DOCKER_CE_CLI_VERSION=release-loong64-v29.6.1+1
+ARG DOCKER_COMPOSE_PLUGIN_VERSION=release-loong64-v5.2.0+1
+ARG DOCKER_BUILDX_PLUGIN_VERSION=release-loong64-v0.35.0+1
+
+RUN _ce_cli_ver="${DOCKER_CE_CLI_VERSION#release-loong64-v}" \
+    && _compose_ver="${DOCKER_COMPOSE_PLUGIN_VERSION#release-loong64-v}" \
+    && _buildx_ver="${DOCKER_BUILDX_PLUGIN_VERSION#release-loong64-v}" \
+    && DOCKER_CE_CLI_URL="https://github.com/kubernetes-loong64/cli-loong64/releases/download/${DOCKER_CE_CLI_VERSION}/docker-ce-cli-${_ce_cli_ver//+/-}.an23.loongarch64.rpm" \
+    && DOCKER_COMPOSE_PLUGIN_URL="https://github.com/kubernetes-loong64/compose-loong64/releases/download/${DOCKER_COMPOSE_PLUGIN_VERSION}/docker-compose-plugin-${_compose_ver//+/-}.an23.loongarch64.rpm" \
+    && DOCKER_BUILDX_PLUGIN_URL="https://github.com/kubernetes-loong64/buildx-loong64/releases/download/${DOCKER_BUILDX_PLUGIN_VERSION}/docker-buildx-plugin-${_buildx_ver//+/-}.an23.loongarch64.rpm" \
+    && echo "Downloading docker-ce-cli: ${DOCKER_CE_CLI_URL}" \
+    && curl -fsSL -o /tmp/docker-ce-cli.rpm "${DOCKER_CE_CLI_URL}" \
+    && echo "Downloading docker-compose-plugin: ${DOCKER_COMPOSE_PLUGIN_URL}" \
+    && curl -fsSL -o /tmp/docker-compose-plugin.rpm "${DOCKER_COMPOSE_PLUGIN_URL}" \
+    && echo "Downloading docker-buildx-plugin: ${DOCKER_BUILDX_PLUGIN_URL}" \
+    && curl -fsSL -o /tmp/docker-buildx-plugin.rpm "${DOCKER_BUILDX_PLUGIN_URL}" \
+    && dnf install -y /tmp/docker-ce-cli.rpm /tmp/docker-compose-plugin.rpm /tmp/docker-buildx-plugin.rpm \
+    && rm -rf /tmp/*.rpm \
+    && dnf clean all \
+    && rm -rf /var/cache/dnf \
+    && docker --version \
+    && docker compose version \
+    && docker buildx version
+
+LABEL maintainer="徐晓伟 <xuxiaowei@xuxiaowei.com.cn>" \
+      license="Apache-2.0" \
+      org.opencontainers.image.authors="徐晓伟 <xuxiaowei@xuxiaowei.com.cn>" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.title="LoongArch docker cli" \
+      org.opencontainers.image.description="docker cli ${DOCKER_CLI_VERSION} for LoongArch (loong64)" \
+      org.opencontainers.image.version="${DOCKER_CLI_VERSION}" \
+      org.opencontainers.image.url="https://github.com/kubernetes-loong64/docker-cli-loong64" \
+      org.opencontainers.image.source="https://github.com/kubernetes-loong64/docker-cli-loong64"

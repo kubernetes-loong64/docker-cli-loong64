@@ -1,0 +1,41 @@
+ARG BASE_IMAGE=lcr.loongnix.cn/debian:14
+FROM $BASE_IMAGE
+
+ARG DOCKER_CLI_VERSION=dev
+
+ARG DOCKER_CE_CLI_VERSION=release-loong64-v29.6.1+1
+ARG DOCKER_COMPOSE_PLUGIN_VERSION=release-loong64-v5.2.0+1
+ARG DOCKER_BUILDX_PLUGIN_VERSION=release-loong64-v0.35.0+1
+
+RUN _ce_cli_ver="${DOCKER_CE_CLI_VERSION#release-loong64-v}" \
+    && _compose_ver="${DOCKER_COMPOSE_PLUGIN_VERSION#release-loong64-v}" \
+    && _buildx_ver="${DOCKER_BUILDX_PLUGIN_VERSION#release-loong64-v}" \
+    && DOCKER_CE_CLI_URL="https://github.com/kubernetes-loong64/cli-loong64/releases/download/${DOCKER_CE_CLI_VERSION}/docker-ce-cli_${_ce_cli_ver//+/-}.debian.13.trixie_loong64.deb" \
+    && DOCKER_COMPOSE_PLUGIN_URL="https://github.com/kubernetes-loong64/compose-loong64/releases/download/${DOCKER_COMPOSE_PLUGIN_VERSION}/docker-compose-plugin_${_compose_ver//+/-}.debian.13.trixie_loong64.deb" \
+    && DOCKER_BUILDX_PLUGIN_URL="https://github.com/kubernetes-loong64/buildx-loong64/releases/download/${DOCKER_BUILDX_PLUGIN_VERSION}/docker-buildx-plugin_${_buildx_ver//+/-}.debian.13.trixie_loong64.deb" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates \
+    && echo "Downloading docker-ce-cli: ${DOCKER_CE_CLI_URL}" \
+    && curl -fsSL -o /tmp/docker-ce-cli.deb "${DOCKER_CE_CLI_URL}" \
+    && echo "Downloading docker-compose-plugin: ${DOCKER_COMPOSE_PLUGIN_URL}" \
+    && curl -fsSL -o /tmp/docker-compose-plugin.deb "${DOCKER_COMPOSE_PLUGIN_URL}" \
+    && echo "Downloading docker-buildx-plugin: ${DOCKER_BUILDX_PLUGIN_URL}" \
+    && curl -fsSL -o /tmp/docker-buildx-plugin.deb "${DOCKER_BUILDX_PLUGIN_URL}" \
+    && apt-get install -y /tmp/docker-ce-cli.deb /tmp/docker-compose-plugin.deb /tmp/docker-buildx-plugin.deb \
+    && rm -rf /tmp/*.deb \
+    && apt-get remove -y curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && docker --version \
+    && docker compose version \
+    && docker buildx version
+
+LABEL maintainer="徐晓伟 <xuxiaowei@xuxiaowei.com.cn>" \
+      license="Apache-2.0" \
+      org.opencontainers.image.authors="徐晓伟 <xuxiaowei@xuxiaowei.com.cn>" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.title="LoongArch docker cli" \
+      org.opencontainers.image.description="docker cli ${DOCKER_CLI_VERSION} for LoongArch (loong64)" \
+      org.opencontainers.image.version="${DOCKER_CLI_VERSION}" \
+      org.opencontainers.image.url="https://github.com/kubernetes-loong64/docker-cli-loong64" \
+      org.opencontainers.image.source="https://github.com/kubernetes-loong64/docker-cli-loong64"
