@@ -15,14 +15,15 @@ on:
       - docker/**
       - .github/workflows/loong64.yml
 
+env:
+  NAMESPACE: ${{ vars.NAMESPACE || 'kubernetesloong64' }}
+  DOCKER_CE_CLI_VERSION: release-loong64-v29.6.1+1
+  DOCKER_COMPOSE_PLUGIN_VERSION: release-loong64-v5.2.0+1
+  DOCKER_BUILDX_PLUGIN_VERSION: release-loong64-v0.35.0+1
+
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      NAMESPACE: ${{ vars.NAMESPACE || 'kubernetesloong64' }}
-      DOCKER_CE_CLI_VERSION: release-loong64-v29.6.1+1
-      DOCKER_COMPOSE_PLUGIN_VERSION: release-loong64-v5.2.0+1
-      DOCKER_BUILDX_PLUGIN_VERSION: release-loong64-v0.35.0+1
     strategy:
       fail-fast: false
       matrix:
@@ -86,6 +87,73 @@ jobs:
             --build-arg "DOCKER_CE_CLI_VERSION=${{ env.DOCKER_CE_CLI_VERSION }}" \
             --build-arg "DOCKER_COMPOSE_PLUGIN_VERSION=${{ env.DOCKER_COMPOSE_PLUGIN_VERSION }}" \
             --build-arg "DOCKER_BUILDX_PLUGIN_VERSION=${{ env.DOCKER_BUILDX_PLUGIN_VERSION }}" \
+            --platform linux/loong64 \
+            -t "${TAG}" \
+            -t "${SYNC_TAG}" \
+            docker/
+          echo "==> Done: ${TAG}"
+
+  build-git:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        git_version: [ "v2.54.0" ]
+        base:
+          - os: anolis
+            dockerfile: Dockerfile.anolis.git
+          - os: debian
+            dockerfile: Dockerfile.debian.git
+          - os: debian-slim
+            dockerfile: Dockerfile.debian.git
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Login to Docker
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Login to sync container registry
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        if: vars.SYNC_REGISTRY != ''
+        with:
+          registry: ${{ vars.SYNC_REGISTRY }}
+          username: ${{ vars.SYNC_REGISTRY_USERNAME }}
+          password: ${{ secrets.SYNC_REGISTRY_PASSWORD }}
+
+      - name: Build git image
+        run: |
+          PREFIX="${{ env.NAMESPACE }}/docker-cli-loong64"
+          DOCKER_CLI_VERSION="${DOCKER_CE_CLI_VERSION#release-loong64-v}"
+          DOCKER_CLI_VERSION="${DOCKER_CLI_VERSION//+/-}"
+          echo "DOCKER_CLI_VERSION=${DOCKER_CLI_VERSION}"
+          TAG="${PREFIX}:${DOCKER_CLI_VERSION}-${{ matrix.base.os }}-git"
+          echo "==> Building ${TAG}"
+          SYNC_PREFIX=${PREFIX}
+          if [ -n "${{ vars.SYNC_REGISTRY }}" ]; then
+            SYNC_PREFIX=${{ vars.SYNC_REGISTRY }}/${PREFIX}
+          fi
+          SYNC_TAG="${SYNC_PREFIX}:${DOCKER_CLI_VERSION}-${{ matrix.base.os }}-git"
+          docker buildx build \
+            --no-cache \
+            --pull \
+            -f "docker/${{ matrix.base.dockerfile }}" \
+            --push \
+            --build-arg "GIT_VERSION=${{ matrix.git_version }}" \
+            --build-arg "DOCKER_CLI_VERSION=${DOCKER_CLI_VERSION}" \
             --platform linux/loong64 \
             -t "${TAG}" \
             -t "${SYNC_TAG}" \
