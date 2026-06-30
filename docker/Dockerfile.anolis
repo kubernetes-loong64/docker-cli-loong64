@@ -10,9 +10,12 @@ ARG DOCKER_BUILDX_PLUGIN_VERSION=release-loong64-v0.35.0+1
 RUN _ce_cli_ver="${DOCKER_CE_CLI_VERSION#release-loong64-v}" \
     && _compose_ver="${DOCKER_COMPOSE_PLUGIN_VERSION#release-loong64-v}" \
     && _buildx_ver="${DOCKER_BUILDX_PLUGIN_VERSION#release-loong64-v}" \
-    && DOCKER_CE_CLI_URL="https://github.com/kubernetes-loong64/cli-loong64/releases/download/${DOCKER_CE_CLI_VERSION}/docker-ce-cli-${_ce_cli_ver//+/-}.an23.loongarch64.rpm" \
-    && DOCKER_COMPOSE_PLUGIN_URL="https://github.com/kubernetes-loong64/compose-loong64/releases/download/${DOCKER_COMPOSE_PLUGIN_VERSION}/docker-compose-plugin-${_compose_ver//+/-}.an23.loongarch64.rpm" \
-    && DOCKER_BUILDX_PLUGIN_URL="https://github.com/kubernetes-loong64/buildx-loong64/releases/download/${DOCKER_BUILDX_PLUGIN_VERSION}/docker-buildx-plugin-${_buildx_ver//+/-}.an23.loongarch64.rpm" \
+    && _ce_cli_ver="$(echo ${_ce_cli_ver} | tr + -)" \
+    && _compose_ver="$(echo ${_compose_ver} | tr + -)" \
+    && _buildx_ver="$(echo ${_buildx_ver} | tr + -)" \
+    && DOCKER_CE_CLI_URL="https://github.com/kubernetes-loong64/cli-loong64/releases/download/${DOCKER_CE_CLI_VERSION}/docker-ce-cli-${_ce_cli_ver}.an23.loongarch64.rpm" \
+    && DOCKER_COMPOSE_PLUGIN_URL="https://github.com/kubernetes-loong64/compose-loong64/releases/download/${DOCKER_COMPOSE_PLUGIN_VERSION}/docker-compose-plugin-${_compose_ver}.an23.loongarch64.rpm" \
+    && DOCKER_BUILDX_PLUGIN_URL="https://github.com/kubernetes-loong64/buildx-loong64/releases/download/${DOCKER_BUILDX_PLUGIN_VERSION}/docker-buildx-plugin-${_buildx_ver}.an23.loongarch64.rpm" \
     && echo "Downloading docker-ce-cli: ${DOCKER_CE_CLI_URL}" \
     && curl -fsSL -o /tmp/docker-ce-cli.rpm "${DOCKER_CE_CLI_URL}" \
     && echo "Downloading docker-compose-plugin: ${DOCKER_COMPOSE_PLUGIN_URL}" \
